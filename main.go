@@ -15,7 +15,6 @@ import (
 func main() {
 	req := command.Read()
 	files := req.GetProtoFile()
-	files = vanity.FilterFiles(files, vanity.NotInPackageGoogleProtobuf)
 
 	// Forced (to prevent mistake)
 	vanity.ForEachFile(files, vanity.TurnOffGogoImport)
@@ -27,7 +26,7 @@ func main() {
 
 	// Apply custom fixes.
 	vanity.ForEachFieldInFilesExcludingExtensions(files, fixFieldName)
-	vanity.ForEachFieldInFilesExcludingExtensions(files, fixNumericJSONTag)
+	// vanity.ForEachFieldInFilesExcludingExtensions(files, fixNumericJSONTag)
 
 	resp := command.Generate(req)
 	command.Write(resp)
@@ -52,27 +51,28 @@ func fixFieldName(field *gogo.FieldDescriptorProto) {
 	proto.SetExtension(field.Options, gogoproto.E_Customname, &name)
 }
 
-func fixNumericJSONTag(field *gogo.FieldDescriptorProto) {
-	if gogoproto.GetJsonTag(field) != nil {
-		return // Skip if a custom jsontag is specified.
-	}
-
-	switch field.GetType() {
-	// https://godoc.org/github.com/golang/protobuf/jsonpb says
-	// jsonpb "encodes int64, uint64 as strings"
-	case gogo.FieldDescriptorProto_TYPE_INT64, gogo.FieldDescriptorProto_TYPE_UINT64:
-
-	default: // Not applicable.
-		return
-	}
-
-	if field.Options == nil {
-		field.Options = new(gogo.FieldOptions)
-	}
-
-	jsonTag := *field.Name + ",string" + ",omitempty"
-	proto.SetExtension(field.Options, gogoproto.E_Jsontag, &jsonTag)
-}
+//TODO(jerrodrurik):
+// func fixNumericJSONTag(field *gogo.FieldDescriptorProto) {
+// 	if gogoproto.GetJsonTag(field) != nil {
+// 		return // Skip if a custom jsontag is specified.
+// 	}
+//
+// 	switch field.GetType() {
+// 	// https://godoc.org/github.com/golang/protobuf/jsonpb says
+// 	// jsonpb "encodes int64, uint64 as strings"
+// 	case gogo.FieldDescriptorProto_TYPE_INT64, gogo.FieldDescriptorProto_TYPE_UINT64:
+//
+// 	default: // Not applicable.
+// 		return
+// 	}
+//
+// 	if field.Options == nil {
+// 		field.Options = new(gogo.FieldOptions)
+// 	}
+//
+// 	jsonTag := *field.Name + ",string" + ",omitempty"
+// 	proto.SetExtension(field.Options, gogoproto.E_Jsontag, &jsonTag)
+// }
 
 // See: https://github.com/golang/lint/blob/master/lint.go
 // commonInitialisms is a set of common initialisms.
